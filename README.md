@@ -6,8 +6,10 @@ the server writes to in and the bot writes to out.
 Installing
 ==========
 
-tubes is configured within tubes.c by changing the values of the server and
-port variables at compile time. OpenSSL is a dependency of tubes; download
-the devel package from your distro.
+tubes' defaults are configured within tubes.c by changing the values of the
+server and port variables at compile time. OpenSSL is a dependency of tubes;
+download the devel package from your distro.
+
+To install, cd into the cloned directory and `sudo make install`.
 
 Custom compiler flags can be appended to the defaults, e.g. `CFLAGS=-fPIC`.
