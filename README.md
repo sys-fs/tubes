@@ -10,6 +10,7 @@ tubes' defaults are configured within tubes.c by changing the values of the
 server and port variables at compile time. OpenSSL is a dependency of tubes;
 download the devel package from your distro.
 
-To install, cd into the cloned directory and `sudo make install`.
+To install, cd into the cloned directory and `sudo make install`. Some
+tweaking of the Makefile may be necessary, e.g. the location of local manpages.
 
 Custom compiler flags can be appended to the defaults, e.g. `CFLAGS=-fPIC`.

@@ -3,9 +3,11 @@ override CFLAGS+=-Wall -Wpedantic -O2
 LDFLAGS=-lcrypto -lssl
 PREFIX=/usr/local
 MANPREFIX=${PREFIX}/man
+#Ubuntu uses the one below
+#MANPREFIX=${PREFIX}/share/man
 
 it:
-	${CC} ${CFLAGS} ${LDFLAGS} tubes.c -o tubes
+	${CC} tubes.c ${CFLAGS} ${LDFLAGS} -o tubes
 
 install: it
 	echo installing executable to ${DESTDIR}${PREFIX}/bin
