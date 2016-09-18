@@ -19,10 +19,10 @@
 #include <unistd.h>
 
 #define PING_TIMEOUT 240
-#define VERSION "1.0.0"
+#define VERSION "1.1.0"
 
 static char *server = "chat.freenode.net";
-static char *port = "6667";
+static char port[6] = "6667";
 static FILE *log;
 static SSL_CTX *ctx;
 static SSL *ssl;
@@ -54,6 +54,7 @@ int main(int argc, char **argv)
 		switch (c) {
 		case 'S':
 			use_ssl = 1;
+			snprintf(port, 6, "6697");
 			break;
 		case 's':
 			if (++i < argc)
@@ -61,7 +62,7 @@ int main(int argc, char **argv)
 			break;
 		case 'p':
 			if (++i < argc)
-				port = argv[i];
+				snprintf(port, 6, "%s", argv[i]);
 			break;
 		case 'v':
 			fprintf(stderr, "tubes-%s © 2016 Thomas Mannay\n", VERSION);
