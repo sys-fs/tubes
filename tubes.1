@@ -1,0 +1,40 @@
+.TH TUBES 1 tubes-1.0.0
+.SH NAME
+tubes \- irc pipes
+.SH SYNOPSIS
+.B tubes
+.RB [ \-S ]
+.RB [ \-s
+.IR server ]
+.RB [ \-p
+.IR port ]
+.RB [ \-v ]
+.SH DESCRIPTION
+.B tubes
+is a small daemon that provides a minimalistic interface for irc bots.
+Messages to and from the server are represented by two FIFO buffers in /tmp.
+For the default server (freenode) these would be chat.freenode.net.in and
+chat.freenode.net.out for incoming and outgoing messages respectively.
+
+.SH OPTIONS
+.TP
+.B \-S
+Use SSL
+.TP
+.BI \-s " server"
+Use a host other than the default (chat.freenode.net)
+.TP
+.BI \-p " port"
+Use a port other than the default (6667)
+.TP
+.B \-v
+Prints version information and exits
+
+.SH FILES
+The incoming and outgoing FIFO buffers are stored in /tmp and are named for
+the server tubes is connected to with .in or .out appended to the end.
+~/.tubes.err is used to store a string explaining why tubes has exited, if any.
+.SH RETURN VALUE
+Returns -1 when something has gone wrong or 0 on success.
+.SH AUTHOR
+Copyright \(co 2016 Thomas Mannay <audiobarrier@openmailbox.org>.
