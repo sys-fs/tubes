@@ -16,7 +16,6 @@
 #include <unistd.h>
 
 #define PING_TIMEOUT 240
-#define VERSION "1.1.1"
 
 static SSL_CTX *ctx;
 static SSL *ssl;
@@ -104,10 +103,10 @@ main(int argc, char **argv)
 	int i, r, status;
 
 	for (i = 1; i < argc; i++) {
-		char c = argv[i][1];
+		r = argv[i][1];
 		if (argv[i][0] != '-' || argv[i][2])
-			c = -1;
-		switch (c) {
+			r = -1;
+		switch (r) {
 		case 'S':
 			use_ssl = 1;
 			port = 6697;
@@ -120,9 +119,8 @@ main(int argc, char **argv)
 			if (++i < argc)
 				port = atoi(argv[i]);
 			break;
-		case 'v': /* fall through */
 		default:
-			fprintf(stderr, "tubes-%s © 2016 Thomas Mannay\n", VERSION);
+			fprintf(stderr, "usage: tubes [-S] [-s server] [-p port]\n");
 			exit(0);
 		}
 	}
@@ -154,7 +152,6 @@ main(int argc, char **argv)
 		fprintf(log, "out: error on open()\n");
 		exit(-1);
 	}
-
 	for (status = 0;;) {
 		FD_ZERO(&rd);
 		maxfd = (out >= sockfd) ? out : sockfd;
@@ -185,14 +182,13 @@ main(int argc, char **argv)
 			}
 		if (FD_ISSET(sockfd, &rd)) {
 			if (use_ssl) {
-				int blocked;
 				do {
-					blocked = 0;
+					r = 0;
 					i = SSL_read(ssl, buf, sizeof(buf));
 					if (SSL_get_error(ssl, i)
 					    == SSL_ERROR_WANT_READ)
-						blocked = 1;
-				} while (SSL_pending(ssl) && !blocked);
+						r = 1;
+				} while (SSL_pending(ssl) && !r);
 			} else
 				i = recv(sockfd, buf, sizeof(buf), 0);
 			if (i != -1) {
