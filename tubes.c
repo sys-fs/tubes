@@ -25,7 +25,7 @@ static FILE *log;
 static short use_ssl = 0;
 static unsigned int last_response;
 
-FILE *
+static FILE *
 slog(char *file)
 {
 	const char *home = getenv("HOME");
@@ -39,7 +39,7 @@ slog(char *file)
 	return fp;
 }
 
-int
+static int
 dial(char *server, int port)
 {
 	int sockfd, err;
@@ -68,7 +68,7 @@ dial(char *server, int port)
 	return sockfd;
 }
 
-int
+static int
 sslify(int *sockfd)
 {
 	int r;
