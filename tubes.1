@@ -1,26 +1,26 @@
-.TH TUBES 1 tubes-1.2.1
+.TH TUBES 1 tubes-1.3.0
 .SH NAME
 tubes \- irc pipes
 .SH SYNOPSIS
 .B tubes
 .RB [ \-S ]
-.RB [ \-s
-.IR server ]
+.RB [ \-h
+.IR host ]
 .RB [ \-p
 .IR port ]
 .SH DESCRIPTION
 .B tubes
 is a small daemon that provides a minimalistic interface for irc bots.
-Messages to and from the server are represented by two FIFO buffers in /tmp.
-For the default server (freenode) these would be chat.freenode.net.in and
-chat.freenode.net.out for incoming and outgoing messages respectively.
+Messages to and from the host are represented by two FIFO buffers in /tmp.
+These buffers are named for the host tubes is connected to, with ".in" or
+".out" appended to it for incoming or outgoing messages respectively.
 
 .SH OPTIONS
 .TP
 .B \-S
 Use SSL (changes port to 6697)
 .TP
-.BI \-s " server"
+.BI \-h " host"
 Use a host other than the default (chat.freenode.net)
 .TP
 .BI \-p " port"

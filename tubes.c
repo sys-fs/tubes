@@ -19,7 +19,7 @@
 
 static SSL_CTX *ctx;
 static SSL *ssl;
-static char *server = "chat.freenode.net";
+static char *host = "chat.freenode.net";
 static int port = 6667;
 static FILE *log;
 static short use_ssl = 0;
@@ -40,7 +40,7 @@ slog(char *file)
 }
 
 static int
-dial(char *server, int port)
+dial(char *host, int port)
 {
 	int sockfd, err;
 	struct addrinfo hints, *serv;
@@ -51,7 +51,7 @@ dial(char *server, int port)
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
-	if ((err = getaddrinfo(server, tmp, &hints, &serv)) != 0) {
+	if ((err = getaddrinfo(host, tmp, &hints, &serv)) != 0) {
 		fprintf(log, "getaddrinfo: %s\n", gai_strerror(err));
 		return -1;
 	} else if ((sockfd = socket(serv->ai_family, serv->ai_socktype,
@@ -111,16 +111,17 @@ main(int argc, char **argv)
 			use_ssl = 1;
 			port = 6697;
 			break;
-		case 's':
+		case 'h':
 			if (++i < argc)
-				server = argv[i];
+				host = argv[i];
 			break;
 		case 'p':
 			if (++i < argc)
 				port = atoi(argv[i]);
 			break;
 		default:
-			fprintf(stderr, "usage: tubes [-S] [-s server] [-p port]\n");
+			fprintf(stderr,
+				"usage: tubes [-S] [-h host] [-p port]\n");
 			exit(0);
 		}
 	}
@@ -133,19 +134,19 @@ main(int argc, char **argv)
 		fprintf(log, "error on daemon()\n");
 		exit(-1);
 	}
-	if ((sockfd = dial(server, port)) == -1)
+	if ((sockfd = dial(host, port)) == -1)
 		exit(-1);
 	if (use_ssl && sslify(&sockfd) == -1)
 		exit(-1);
 
-	snprintf(buf, 512, "/tmp/%s.in", server);
+	snprintf(buf, 512, "/tmp/%s.in", host);
 	unlink(buf);
 	mkfifo(buf, 0660);
 	if ((in = open(buf, O_RDWR | O_NONBLOCK)) < 0) {
 		fprintf(log, "in: error on open()\n");
 		exit(-1);
 	}
-	snprintf(buf, 512, "/tmp/%s.out", server);
+	snprintf(buf, 512, "/tmp/%s.out", host);
 	unlink(buf);
 	mkfifo(buf, 0660);
 	if ((out = open(buf, O_RDWR)) < 0) {
@@ -220,9 +221,9 @@ main(int argc, char **argv)
 	SSL_free(ssl);
 	SSL_CTX_free(ctx);
 
-	snprintf(buf, 512, "/tmp/%s.in", server);
+	snprintf(buf, 512, "/tmp/%s.in", host);
 	unlink(buf);
-	snprintf(buf, 512, "/tmp/%s.out", server);
+	snprintf(buf, 512, "/tmp/%s.out", host);
 	unlink(buf);
 	exit(status);
 }
