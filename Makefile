@@ -1,5 +1,5 @@
 CC=cc
-override CFLAGS+=-Wall -pedantic -O2
+override CFLAGS+=-std=c99 -Wall -pedantic -O2 -D_XOPEN_SOURCE=700 -D_DEFAULT_SOURCE
 LDFLAGS=-lcrypto -lssl
 PREFIX=/usr/local
 MANPREFIX=${PREFIX}/share/man
