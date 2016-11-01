@@ -18,13 +18,16 @@ chat.freenode.net.out for incoming and outgoing messages respectively.
 .SH OPTIONS
 .TP
 .B \-S
-Use SSL (changes default port to 6697)
+Use SSL (changes port to 6697)
 .TP
 .BI \-s " server"
 Use a host other than the default (chat.freenode.net)
 .TP
 .BI \-p " port"
-Use a port other than the default (6667)
+Use a port other than the default (6667) - this option should be specified
+after
+.B \-S
+if SSL is also desired
 
 .SH FILES
 The incoming and outgoing FIFO buffers are stored in /tmp and are named for
