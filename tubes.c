@@ -12,54 +12,55 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <syslog.h>
 #include <time.h>
 #include <unistd.h>
 
 #define PING_TIMEOUT 240
 
+char *argv0;
 static SSL_CTX *ctx;
 static SSL *ssl;
 static char *host = "chat.freenode.net";
-static int port = 6667;
-static FILE *log;
+static char port[6] = "6667";
 static short use_ssl = 0;
 static unsigned int last_response;
 
-static FILE *
-slog(char *file)
+static int
+tube(char *direction)
 {
-	const char *home = getenv("HOME");
-	char path[100];
-	FILE *fp;
+	int fd;
+	char buf[512];
 
-	snprintf(path, 100, "%s/%s", home, file);
-	mknod(path, 0 | 0666, 0);
-	fp = fopen(path, "w");
+	snprintf(buf, sizeof(buf), "/tmp/%s.%s", host, direction);
+	unlink(buf);
+	mkfifo(buf, 0660);
+	if ((fd = open(buf, O_RDWR)) < 0)
+		perror("tube");
 
-	return fp;
+	return fd;
 }
 
 static int
-dial(char *host, int port)
+dial(char *host, char *port)
 {
 	int sockfd, err;
 	struct addrinfo hints, *serv;
 
-	char tmp[8];
-	snprintf(tmp, 8, "%d", port);
-
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
-	if ((err = getaddrinfo(host, tmp, &hints, &serv)) != 0) {
-		fprintf(log, "getaddrinfo: %s\n", gai_strerror(err));
+	if ((err = getaddrinfo(host, port, &hints, &serv)) != 0) {
+		fprintf(stderr, "dial: %s\n", gai_strerror(err));
 		return -1;
-	} else if ((sockfd = socket(serv->ai_family, serv->ai_socktype,
-				    serv->ai_protocol)) == -1) {
-		fprintf(log, "tubes: error on socket()\n");
+	}
+	if ((sockfd = socket(serv->ai_family, serv->ai_socktype,
+			     serv->ai_protocol)) < 0) {
+		perror("dial");
 		return -1;
-	} else if (connect(sockfd, serv->ai_addr, serv->ai_addrlen) == -1) {
-		fprintf(log, "tubes: error on connect().\n");
+	}
+	if (connect(sockfd, serv->ai_addr, serv->ai_addrlen) < 0) {
+		perror("dial");
 		close(sockfd);
 		return -1;
 	}
@@ -84,7 +85,7 @@ sslify(int *sockfd)
 	SSL_set_connect_state(ssl);
 
 	if ((r = SSL_connect(ssl)) < 1) {
-		fprintf(log, "sslify: %s\n", strerror(SSL_get_error(ssl, r)));
+		fprintf(stderr, "sslify: %s\n", strerror(SSL_get_error(ssl, r)));
 		SSL_CTX_free(ctx);
 		return -1;
 	}
@@ -102,57 +103,38 @@ main(int argc, char **argv)
 	char buf[512];
 	int i, r, status;
 
-	for (i = 1; i < argc; i++) {
-		r = argv[i][1];
-		if (argv[i][0] != '-' || argv[i][2])
-			r = -1;
-		switch (r) {
+	while ((i = getopt(argc, argv, "Shp:")) != -1) {
+		switch (i) {
 		case 'S':
 			use_ssl = 1;
-			port = 6697;
+			strncpy(port, "6697", sizeof(port));
 			break;
 		case 'h':
-			if (++i < argc)
-				host = argv[i];
+			host = optarg;
 			break;
 		case 'p':
-			if (++i < argc)
-				port = atoi(argv[i]);
+			strncpy(port, optarg, sizeof(port));
 			break;
 		default:
-			fprintf(stderr,
-				"usage: tubes [-S] [-h host] [-p port]\n");
-			exit(0);
+			fprintf(stderr, "usage: tubes [-S] [-h host] [-p port]\n");
+			return 1;
 		}
 	}
 
-	if ((log = slog(".tubes.err")) == NULL) {
-		fprintf(stderr, "error on slog()");
-		exit(-1);
+	if ((sockfd = dial(host, port)) < 0)
+		return 1;
+	if (use_ssl && sslify(&sockfd) < 0)
+		return 1;
+	if ((in = tube("in")) < 0)
+		return 1;
+	if ((out = tube("out")) < 0)
+		return 1;
+	if (daemon(0, 0) < 0) {
+		perror("main");
+		return 1;
 	}
-	if (daemon(0, 0) == -1) {
-		fprintf(log, "error on daemon()\n");
-		exit(-1);
-	}
-	if ((sockfd = dial(host, port)) == -1)
-		exit(-1);
-	if (use_ssl && sslify(&sockfd) == -1)
-		exit(-1);
 
-	snprintf(buf, 512, "/tmp/%s.in", host);
-	unlink(buf);
-	mkfifo(buf, 0660);
-	if ((in = open(buf, O_RDWR | O_NONBLOCK)) < 0) {
-		fprintf(log, "in: error on open()\n");
-		exit(-1);
-	}
-	snprintf(buf, 512, "/tmp/%s.out", host);
-	unlink(buf);
-	mkfifo(buf, 0660);
-	if ((out = open(buf, O_RDWR)) < 0) {
-		fprintf(log, "out: error on open()\n");
-		exit(-1);
-	}
+	openlog(argv[0], LOG_PID, LOG_DAEMON);
 	for (status = 0;;) {
 		FD_ZERO(&rd);
 		maxfd = (out >= sockfd) ? out : sockfd;
@@ -165,22 +147,29 @@ main(int argc, char **argv)
 		if (r < 0) {
 			if (errno == EINTR)
 				continue;
-			fprintf(log, "error on select()\n");
-			status = -1;
+			syslog(LOG_ERR, strerror(errno));
+			status = 1;
 			break;
-		} else if (r == 0 && last_response-time(NULL) >= PING_TIMEOUT) {
-			fprintf(log, "ping timeout\n");
-			status = -1;
+		} else if (r == 0 && last_response - time(NULL) >= PING_TIMEOUT) {
+			syslog(LOG_ERR, "ping timeout");
+			status = 1;
 			break;
 		}
-		if (FD_ISSET(out, &rd))
-			if ((i = read(out, buf, sizeof(buf))) > 0) {
+		if (FD_ISSET(out, &rd)) {
+			if ((i = read(out, buf, sizeof(buf))) < 0) {
+				if (errno == EINTR)
+					continue;
+				syslog(LOG_ERR, "broken pipe");
+				status = 1;
+				break;
+			} else if (i > 0) {
 				buf[i] = 0;
 				if (use_ssl)
 					SSL_write(ssl, buf, strlen(buf));
 				else
 					send(sockfd, buf, strlen(buf), 0);
 			}
+		}
 		if (FD_ISSET(sockfd, &rd)) {
 			if (use_ssl) {
 				do {
@@ -194,15 +183,15 @@ main(int argc, char **argv)
 				i = recv(sockfd, buf, sizeof(buf), 0);
 			if (i != -1) {
 				if (i == 0) {
-					fprintf(log, "connection closed\n");
+					syslog(LOG_NOTICE, "connection closed");
 					break;
 				}
 				buf[i] = 0;
 				if (write(in, buf, strlen(buf)) < 0) {
 					if (errno == EINTR)
 						continue;
-					fprintf(log, "error on write()\n");
-					status = -1;
+					syslog(LOG_ERR, "broken pipe");
+					status = 1;
 					break;
 				}
 				last_response = time(NULL);
@@ -213,7 +202,7 @@ main(int argc, char **argv)
 	close(sockfd);
 	close(in);
 	close(out);
-	fclose(log);
+	closelog();
 
 	ERR_free_strings();
 	EVP_cleanup();
@@ -225,5 +214,6 @@ main(int argc, char **argv)
 	unlink(buf);
 	snprintf(buf, 512, "/tmp/%s.out", host);
 	unlink(buf);
-	exit(status);
+
+	return status;
 }
