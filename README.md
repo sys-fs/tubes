@@ -16,4 +16,5 @@ download the devel package from your distro.
 To install, cd into the cloned directory and `sudo make install`. Some
 tweaking of the Makefile may be necessary, e.g. the location of local manpages.
 
-Custom compiler flags can be appended to the defaults, e.g. `CFLAGS=-fPIC`.
+Custom compiler flags can be appended to the defaults by passing a variable to
+make, e.g. `CFLAGS=-fPIC`.
