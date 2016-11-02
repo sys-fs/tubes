@@ -18,7 +18,6 @@
 
 #define PING_TIMEOUT 240
 
-char *argv0;
 static SSL_CTX *ctx;
 static SSL *ssl;
 static char *host = "chat.freenode.net";
