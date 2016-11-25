@@ -203,11 +203,13 @@ main(int argc, char **argv)
 	close(out);
 	closelog();
 
-	ERR_free_strings();
-	EVP_cleanup();
-	SSL_shutdown(ssl);
-	SSL_free(ssl);
-	SSL_CTX_free(ctx);
+	if (use_ssl) {
+		ERR_free_strings();
+		EVP_cleanup();
+		SSL_shutdown(ssl);
+		SSL_free(ssl);
+		SSL_CTX_free(ctx);
+	}
 
 	snprintf(buf, 512, "/tmp/%s.in", host);
 	unlink(buf);
