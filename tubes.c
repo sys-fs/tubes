@@ -23,7 +23,7 @@ static SSL *ssl;
 static char *host = "chat.freenode.net";
 static char port[6] = "6667";
 static short use_ssl = 0;
-static unsigned int last_response;
+static unsigned int last_response = time(NULL);
 
 static int
 tube(char *direction)
@@ -149,7 +149,7 @@ main(int argc, char **argv)
 			syslog(LOG_ERR, strerror(errno));
 			status = 1;
 			break;
-		} else if (r == 0 && last_response - time(NULL) >= PING_TIMEOUT) {
+		} else if (r == 0 && time(NULL) - last_response >= PING_TIMEOUT) {
 			syslog(LOG_ERR, "ping timeout");
 			status = 1;
 			break;
