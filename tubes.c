@@ -23,7 +23,7 @@ static SSL *ssl;
 static char host[128] = "chat.freenode.net";
 static char port[6] = "6667";
 static short use_ssl = 0;
-static unsigned int last_response = time(NULL);
+static unsigned int last_response;
 
 static int
 tube(char *direction)
@@ -134,7 +134,7 @@ main(int argc, char **argv)
 	}
 
 	openlog(argv[0], LOG_PID, LOG_DAEMON);
-	for (status = 0;;) {
+	for (status = 0, last_response = time(NULL);;) {
 		FD_ZERO(&rd);
 		maxfd = (out >= sockfd) ? out : sockfd;
 		FD_SET(out, &rd);
