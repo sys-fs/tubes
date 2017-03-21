@@ -20,7 +20,7 @@
 
 static SSL_CTX *ctx;
 static SSL *ssl;
-static char *host = "chat.freenode.net";
+static char host[128] = "chat.freenode.net";
 static char port[6] = "6667";
 static short use_ssl = 0;
 static unsigned int last_response = time(NULL);
@@ -102,14 +102,14 @@ main(int argc, char **argv)
 	char buf[512];
 	int i, r, status;
 
-	while ((i = getopt(argc, argv, "Shp:")) != -1) {
+	while ((i = getopt(argc, argv, "Sh:p:")) != -1) {
 		switch (i) {
 		case 'S':
 			use_ssl = 1;
 			strncpy(port, "6697", sizeof(port));
 			break;
 		case 'h':
-			host = optarg;
+			strncpy(host, optarg, sizeof(host));
 			break;
 		case 'p':
 			strncpy(port, optarg, sizeof(port));
